@@ -20,11 +20,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { FormSuccess } from "../form-success";
 import { FormError } from "../form-error";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { login } from "@/actions/login";
 
 export const LoginForm = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -35,7 +37,19 @@ export const LoginForm = () => {
   });
 
   function onSubmit(values: z.infer<typeof LoginSchema>) {
-    console.log(values);
+    setError("");
+    setSuccess("");
+    startTransition(() => {
+      login(values).then((data) => {
+        if (data.error) {
+          setError(data.error);
+        }
+
+        if (data.success) {
+          setSuccess(data.success);
+        }
+      });
+    });
   }
 
   return (
@@ -59,6 +73,7 @@ export const LoginForm = () => {
                       {...field}
                       placeholder="john.doe@exmple.com"
                       type="email"
+                      disabled={isPending}
                     />
                   </FormControl>
                   <FormMessage />
@@ -73,7 +88,12 @@ export const LoginForm = () => {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="********" type="password" />
+                    <Input
+                      {...field}
+                      placeholder="********"
+                      type="password"
+                      disabled={isPending}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -82,7 +102,9 @@ export const LoginForm = () => {
           </div>
           <FormSuccess message={success} />
           <FormError message={error} />
-          <Button type="submit">Login</Button>
+          <Button type="submit" disabled={isPending}>
+            Login
+          </Button>
         </form>
       </Form>
     </CardWrapper>
